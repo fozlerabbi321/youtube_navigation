@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 
 void main() {
@@ -5,6 +7,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -14,6 +18,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
   @override
   _MainScreenState createState() => _MainScreenState();
 }
@@ -21,73 +27,36 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  // Track initialized tabs
+  final List<bool> _initializedTabs = [true, false, false, false];
+
   // Keys to manage navigation for each tab
-  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-  ];
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = List.generate(4, (_) => GlobalKey<NavigatorState>());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        fit: StackFit.loose,
-        alignment: Alignment.bottomCenter,
-        children: [
-          IndexedStack(
-            index: _currentIndex,
-            children: <Widget>[
-              Navigator(
-                key: _navigatorKeys[0],
-                onGenerateRoute: (routeSettings) {
-                  return MaterialPageRoute(builder: (_) => HomePage(navigatorKey: _navigatorKeys[0]));
-                },
-              ),
-              Navigator(
-                key: _navigatorKeys[1],
-                onGenerateRoute: (routeSettings) {
-                  return MaterialPageRoute(builder: (_) => ExplorePage(navigatorKey: _navigatorKeys[1]));
-                },
-              ),
-              Navigator(
-                key: _navigatorKeys[2],
-                onGenerateRoute: (routeSettings) {
-                  return MaterialPageRoute(builder: (_) => SubscriptionsPage(navigatorKey: _navigatorKeys[2]));
-                },
-              ),
-              Navigator(
-                key: _navigatorKeys[3],
-                onGenerateRoute: (routeSettings) {
-                  return MaterialPageRoute(builder: (_) => LibraryPage(navigatorKey: _navigatorKeys[3]));
-                },
-              ),
-            ],
-          ),
-
-          // Bottom navigation
-          Container(
-            width: MediaQuery.of(context).size.width,
-            height: 80,
-            color: Colors.blueAccent ,
-          )
+      body: IndexedStack(
+        index: _currentIndex,
+        children: <Widget>[
+          _initializedTabs[0] ? _buildNavigator(HomePage(navigatorKey: _navigatorKeys[0],), 0) : Container(),
+          _initializedTabs[1] ? _buildNavigator(ExplorePage(), 1) : Container(),
+          _initializedTabs[2] ? _buildNavigator(SubscriptionsPage(), 2) : Container(),
+          _initializedTabs[3] ? _buildNavigator(LibraryPage(), 3) : Container(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (_currentIndex == index) {
-            // Check if we are already at the first route in the stack
-            _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
-          } else {
-            setState(() {
-              _currentIndex = index;
-            });
-          }
+          setState(() {
+            if (!_initializedTabs[index]) {
+              _initializedTabs[index] = true; // Initialize the tab when clicked for the first time
+            }
+            _currentIndex = index;
+          });
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home', backgroundColor: Colors.red),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home', backgroundColor: Colors.red,),
           BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Explore'),
           BottomNavigationBarItem(icon: Icon(Icons.subscriptions), label: 'Subscriptions'),
           BottomNavigationBarItem(icon: Icon(Icons.library_books), label: 'Library'),
@@ -95,21 +64,120 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+
+  Navigator _buildNavigator(Widget page, int index) {
+    return Navigator(
+      key: _navigatorKeys[index],
+      onGenerateRoute: (routeSettings) {
+        return MaterialPageRoute(builder: (_) => page);
+      },
+    );
+  }
 }
 
-class HomePage extends StatelessWidget {
-  final GlobalKey<NavigatorState> navigatorKey;
-
-  HomePage({required this.navigatorKey});
+class BasePage extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const BasePage({super.key, required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Home")),
+      appBar: AppBar(title: Text(title)),
+      body: Center(child: child),
+    );
+  }
+}
+
+
+
+class ExplorePage extends StatelessWidget {
+  const ExplorePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    log('ExplorePage build called');
+    return BasePage(
+      title: "Explore",
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => ChannelDetailsPage()),
+          );
+        },
+        child: Text("Open Channel Page"),
+      ),
+    );
+  }
+}
+
+class SubscriptionsPage extends StatelessWidget {
+  const SubscriptionsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    log('SubscriptionsPage build called');
+    return BasePage(
+      title: "Subscriptions",
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => SearchPage()),
+          );
+        },
+        child: Text("Open Search Page"),
+      ),
+    );
+  }
+}
+
+class LibraryPage extends StatelessWidget {
+  const LibraryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    log('LibraryPage build called');
+    return BasePage(
+      title: "Library",
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => NotificationPage()),
+          );
+        },
+        child: Text("Open Notification Page"),
+      ),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  final GlobalKey<NavigatorState> navigatorKey;
+  const HomePage({Key? key,required this.navigatorKey }) : super(key: key);
+
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    log('HomePage initState called');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    log('HomePage build called');
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Home'),
+      ),
       body: Center(
         child: ElevatedButton(
           onPressed: () {
-            navigatorKey.currentState?.push(
+            widget.navigatorKey.currentState!.push(
               MaterialPageRoute(builder: (_) => VideoPlayerPage()),
             );
           },
@@ -120,126 +188,96 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class ExplorePage extends StatelessWidget {
-  final GlobalKey<NavigatorState> navigatorKey;
 
-  ExplorePage({required this.navigatorKey});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Explore")),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (_) => ChannelDetailsPage()),
-            );
-          },
-          child: Text("Open Channel Page"),
-        ),
-      ),
-    );
-  }
-}
-
-class SubscriptionsPage extends StatelessWidget {
-  final GlobalKey<NavigatorState> navigatorKey;
-
-  SubscriptionsPage({required this.navigatorKey});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Subscriptions")),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (_) => SearchPage()),
-            );
-          },
-          child: Text("Open Search Page"),
-        ),
-      ),
-    );
-  }
-}
-
-class LibraryPage extends StatelessWidget {
-  final GlobalKey<NavigatorState> navigatorKey;
-
-  LibraryPage({required this.navigatorKey});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Library")),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (_) => NotificationPage()),
-            );
-          },
-          child: const Text("Open Notification Page"),
-        ),
-      ),
-    );
-  }
-}
-
-// Video Player Page Example
+// Other pages
 class VideoPlayerPage extends StatelessWidget {
-  const VideoPlayerPage({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Video Player")),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => SearchPage()),
-            );
-          },
-          child: Text("Open Search Page"),
+    return WillPopScope(
+      onWillPop: () async {
+        log('onWillPop called on Video Player Page');
+        return true; // Allow the pop action to go back to the previous screen
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text("Video Player"),
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () async {
+              bool shouldPop = await _showExitConfirmationDialog(context);
+              if (shouldPop) {
+                Navigator.of(context).pop(); // Pop the current screen
+              }
+            },
+          ),
+        ),
+        body: Center(
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => SearchPage()),
+              );
+            },
+            child: Text("Open Search Page"),
+          ),
         ),
       ),
     );
   }
+
+  Future<bool> _showExitConfirmationDialog(BuildContext context) async {
+    return await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Exit Video Player"),
+        content: Text("Are you sure you want to exit?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text("Exit"),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
 }
 
-// Channel Details Page Example
 class ChannelDetailsPage extends StatelessWidget {
   const ChannelDetailsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Channel Details")),
-      body: Center(child: Text("Channel Details Content")),
+    return BasePage(
+      title: "Channel Details",
+      child: Text("Channel Details Content"),
     );
   }
 }
 
 class SearchPage extends StatelessWidget {
+  const SearchPage({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Search Page")),
-      body: Center(child: Text("Search Content")),
+    return BasePage(
+      title: "Search Page",
+      child: Text("Search Content"),
     );
   }
 }
 
 class NotificationPage extends StatelessWidget {
+  const NotificationPage({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Notification Page")),
-      body: Center(child: Text("Notification Content")),
+    return BasePage(
+      title: "Notification Page",
+      child: Text("Notification Content"),
     );
   }
 }
