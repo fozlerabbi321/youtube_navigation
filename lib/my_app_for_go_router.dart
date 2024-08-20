@@ -1,60 +1,93 @@
 import 'dart:developer';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-import 'my_app_for_go_router.dart';
+class MyGoRouterApp extends StatelessWidget {
+  MyGoRouterApp({super.key});
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final GoRouter _router = GoRouter(
+    initialLocation: '/home',
+    routes: [
+      ShellRoute(
+        navigatorKey: _rootNavigatorKey,
+        builder: (context, state, child) {
+          return ScaffoldWithNavBar(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/home',
+            name: 'home',
+            pageBuilder: (context, state) => const MaterialPage(child: HomePage()),
+          ),
+          GoRoute(
+            path: '/explore',
+            name: 'explore',
+            pageBuilder: (context, state) => const MaterialPage(child: ExplorePage()),
+          ),
+          GoRoute(
+            path: '/subscriptions',
+            name: 'subscriptions',
+            pageBuilder: (context, state) => const MaterialPage(child: SubscriptionsPage()),
+          ),
+          GoRoute(
+            path: '/library',
+            name: 'library',
+            pageBuilder: (context, state) => const MaterialPage(child: LibraryPage()),
+          ),
+          GoRoute(
+            path: '/videoPlayer',
+            name: 'videoPlayer',
+            pageBuilder: (context, state) => const MaterialPage(child: VideoPlayerPage()),
+          ),
+          GoRoute(
+            path: '/channelDetails',
+            name: 'channelDetails',
+            pageBuilder: (context, state) => const MaterialPage(child: ChannelDetailsPage()),
+          ),
+          GoRoute(
+            path: '/search',
+            name: 'search',
+            pageBuilder: (context, state) => const MaterialPage(child: SearchPage()),
+          ),
+          GoRoute(
+            path: '/notification',
+            name: 'notification',
+            pageBuilder: (context, state) => const MaterialPage(child: NotificationPage()),
+          ),
+        ],
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: MainScreen(),
+    return MaterialApp.router(
+      routerConfig: _router,
     );
   }
 }
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+
+class ScaffoldWithNavBar extends StatefulWidget {
+  final Widget child;
+
+  const ScaffoldWithNavBar({required this.child, super.key});
 
   @override
-  _MainScreenState createState() => _MainScreenState();
+  State<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
   int _currentIndex = 0;
-
-  // Track initialized tabs
-  final List<bool> _initializedTabs = [true, false, false, false];
-
-  // Keys to manage navigation for each tab
-  final List<GlobalKey<NavigatorState>> _navigatorKeys = List.generate(4, (_) => GlobalKey<NavigatorState>());
-
-  //  _onWillPop() async {
-  //   final isFirstRouteInCurrentTab = !await _navigatorKeys[_currentIndex].currentState!.maybePop();
-  //
-  //   if (isFirstRouteInCurrentTab) {
-  //     if (_currentIndex != 0) {
-  //       setState(() {
-  //         _currentIndex = 0;
-  //       });
-  //       return false;
-  //     }
-  //   }
-  //   return isFirstRouteInCurrentTab;
-  // }
 
   Future<void> _onPopInvoked(bool didPop) async {
     if (didPop) {
       return;
     }
 
-    final isFirstRouteInCurrentTab = !await _navigatorKeys[_currentIndex].currentState!.maybePop();
+    final isFirstRouteInCurrentTab = !await _rootNavigatorKey.currentState!.maybePop();
 
     if (isFirstRouteInCurrentTab) {
       if (_currentIndex != 0) {
@@ -73,30 +106,29 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: _onPopInvoked,
+      onPopInvoked: (didPop) => _rootNavigatorKey.currentContext!.pop(),
       child: Scaffold(
-        body: IndexedStack(
-          index: _currentIndex,
-          children: <Widget>[
-            _initializedTabs[0] ? _buildNavigator(0) : Container(),
-            _initializedTabs[1] ? _buildNavigator(1) : Container(),
-            _initializedTabs[2] ? _buildNavigator(2) : Container(),
-            _initializedTabs[3] ? _buildNavigator(3) : Container(),
-          ],
-        ),
+        body: widget.child,
         bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentIndex,
+          currentIndex: _calculateSelectedIndex(context),
           onTap: (index) {
-            if (_currentIndex == index) {
-              _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
-            } else {
-              setState(() {
-                if (!_initializedTabs[index]) {
-                  _initializedTabs[index] = true; // Initialize the tab when clicked for the first time
-                }
-                _currentIndex = index;
-              });
+            switch (index) {
+              case 0:
+                context.go('/home');
+                break;
+              case 1:
+                context.go('/explore');
+                break;
+              case 2:
+                context.go('/subscriptions');
+                break;
+              case 3:
+                context.go('/library');
+                break;
             }
+            setState(() {
+              _currentIndex = index;
+            });
           },
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home', backgroundColor: Colors.red),
@@ -109,45 +141,21 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Navigator _buildNavigator(int index) {
-    return Navigator(
-      key: _navigatorKeys[index],
-      onGenerateRoute: (routeSettings) {
-        Widget page;
-        switch (routeSettings.name) {
-          case '/videoPlayer':
-            page = const VideoPlayerPage();
-            break;
-          case '/channelDetails':
-            page = const ChannelDetailsPage();
-            break;
-          case '/search':
-            page = const SearchPage();
-            break;
-          case '/notification':
-            page = const NotificationPage();
-            break;
-          default:
-            page = _getInitialPageForTab(index);
-        }
-        return MaterialPageRoute(builder: (_) => page);
-      },
-    );
-  }
-
-  Widget _getInitialPageForTab(int index) {
-    switch (index) {
-      case 0:
-        return const HomePage();
-      case 1:
-        return const ExplorePage();
-      case 2:
-        return const SubscriptionsPage();
-      case 3:
-        return const LibraryPage();
-      default:
-        return Container();
+  int _calculateSelectedIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).path ?? '/home';
+    if (location.startsWith('/home')) {
+      return 0;
     }
+    if (location.startsWith('/explore')) {
+      return 1;
+    }
+    if (location.startsWith('/subscriptions')) {
+      return 2;
+    }
+    if (location.startsWith('/library')) {
+      return 3;
+    }
+    return 0;
   }
 }
 
@@ -161,7 +169,8 @@ class HomePage extends StatelessWidget {
       title: "Home",
       child: ElevatedButton(
         onPressed: () {
-          Navigator.of(context).pushNamed('/videoPlayer');
+         // Navigator.of(context).pushNamed('/videoPlayer');
+          context.go('/videoPlayer');
         },
         child: const Text("Open Video Player"),
       ),
@@ -207,7 +216,7 @@ class ExplorePage extends StatelessWidget {
       title: "Explore",
       child: ElevatedButton(
         onPressed: () async {
-          Navigator.of(context).pushNamed('/channelDetails');
+          context.go('/channelDetails');
         },
         child: const Text("Open Channel Page"),
       ),
@@ -225,7 +234,7 @@ class SubscriptionsPage extends StatelessWidget {
       title: "Subscriptions",
       child: ElevatedButton(
         onPressed: () async {
-          Navigator.of(context).pushNamed('/search');
+          context.go('/search');
         },
         child: const Text("Open Search Page"),
       ),
@@ -243,7 +252,7 @@ class LibraryPage extends StatelessWidget {
       title: "Library",
       child: ElevatedButton(
         onPressed: () async {
-          Navigator.of(context).pushNamed('/notification');
+          context.go('/notification');
         },
         child: const Text("Open Notification Page"),
       ),
@@ -263,7 +272,7 @@ class VideoPlayerPage extends StatelessWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
-            Navigator.of(context).pushNamed('/search');
+            context.go('/search');
           },
           child: const Text("Open Search Page"),
         ),
@@ -307,3 +316,5 @@ class NotificationPage extends StatelessWidget {
     );
   }
 }
+
+
