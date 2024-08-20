@@ -80,25 +80,45 @@ class ScaffoldWithNavBar extends StatefulWidget {
 }
 
 class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
+
   int _currentIndex = 0;
 
   Future<void> _onPopInvoked(bool didPop) async {
-    if (didPop) {
-      return;
-    }
-
-    final isFirstRouteInCurrentTab = !await _rootNavigatorKey.currentState!.maybePop();
-
+    final GoRouterState state = GoRouterState.of(context);
+    final GoRouter router = GoRouter.of(context);
+    // Check if the current location is the root route of the tab
+    final isFirstRouteInCurrentTab = _isFirstRouteInTab(state.uri.path);
     if (isFirstRouteInCurrentTab) {
       if (_currentIndex != 0) {
+        // If not on the first tab, switch to the first tab
         setState(() {
           _currentIndex = 0;
         });
+        router.go('/home'); // Navigate to the home tab
+       // return false;
       } else {
         log('The user is trying to pop the first route in the current tab');
-        // Handle the case where the user is on the first route of the first tab
-        // and wants to exit the app. You can show a dialog or perform other actions here.
+        // Here you can show a dialog or perform other actions, e.g., double back to exit.
+       // return true; // Allow app to exit
       }
+    } else {
+      router.pop(); // Pop the current route
+      //return false; // Prevent further popping
+    }
+  }
+
+  bool _isFirstRouteInTab(String location) {
+    switch (_currentIndex) {
+      case 0:
+        return location == '/home';
+      case 1:
+        return location == '/explore';
+      case 2:
+        return location == '/subscriptions';
+      case 3:
+        return location == '/library';
+      default:
+        return true;
     }
   }
 
@@ -106,7 +126,7 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) => _rootNavigatorKey.currentContext!.pop(),
+      onPopInvoked: _onPopInvoked,
       child: Scaffold(
         body: widget.child,
         bottomNavigationBar: BottomNavigationBar(
