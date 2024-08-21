@@ -94,7 +94,7 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
         setState(() {
           _currentIndex = 0;
         });
-        router.go('/home'); // Navigate to the home tab
+        router.goNamed('home'); // Navigate to the home tab
        // return false;
       } else {
         log('The user is trying to pop the first route in the current tab');
@@ -134,16 +134,16 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
           onTap: (index) {
             switch (index) {
               case 0:
-                context.go('/home');
+                context.goNamed('home');
                 break;
               case 1:
-                context.go('/explore');
+                context.goNamed('explore');
                 break;
               case 2:
-                context.go('/subscriptions');
+                context.goNamed('subscriptions');
                 break;
               case 3:
-                context.go('/library');
+                context.goNamed('library');
                 break;
             }
             setState(() {
@@ -190,7 +190,7 @@ class HomePage extends StatelessWidget {
       child: ElevatedButton(
         onPressed: () {
          // Navigator.of(context).pushNamed('/videoPlayer');
-          context.go('/videoPlayer');
+          context.goNamed('videoPlayer');
         },
         child: const Text("Open Video Player"),
       ),
@@ -236,7 +236,7 @@ class ExplorePage extends StatelessWidget {
       title: "Explore",
       child: ElevatedButton(
         onPressed: () async {
-          context.go('/channelDetails');
+          context.goNamed('channelDetails');
         },
         child: const Text("Open Channel Page"),
       ),
@@ -254,7 +254,7 @@ class SubscriptionsPage extends StatelessWidget {
       title: "Subscriptions",
       child: ElevatedButton(
         onPressed: () async {
-          context.go('/search');
+          context.goNamed('search');
         },
         child: const Text("Open Search Page"),
       ),
@@ -272,7 +272,7 @@ class LibraryPage extends StatelessWidget {
       title: "Library",
       child: ElevatedButton(
         onPressed: () async {
-          context.go('/notification');
+          context.goNamed('notification');
         },
         child: const Text("Open Notification Page"),
       ),
@@ -292,7 +292,7 @@ class VideoPlayerPage extends StatelessWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
-            context.go('/search');
+            context.goNamed('search');
           },
           child: const Text("Open Search Page"),
         ),
